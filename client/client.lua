@@ -249,7 +249,7 @@ AddEventHandler('qb-vehicleshop.vehiclesInfos', function()
     if Config.Debug then print(vehcategory) end
     for k,v in pairs(QBCore.Shared.Vehicles) do
         if v.shop == vehcategory then
-            vehiclesTable[v.categoryLabel] = {}
+            vehiclesTable[v.category] = {}
         end
     end
 
@@ -272,11 +272,11 @@ AddEventHandler('qb-vehicleshop.vehiclesInfos', function()
                             brand = v.brand,
                             model = v.model,
                             price = v.price,
-                            category = v.categoryLabel,
+                            category = v.category,
                             qtd = result,
                             discount = discount
                         }
-                        table.insert(vehiclesTable[v.categoryLabel], provisoryObject)
+                        table.insert(vehiclesTable[v.category], provisoryObject)
                     end, v.model)
                 else
                     provisoryObject = {
@@ -284,11 +284,11 @@ AddEventHandler('qb-vehicleshop.vehiclesInfos', function()
                         brand = v.brand,
                         model = v.model,
                         price = v.price,
-                        category = v.categoryLabel,
+                        category = v.category,
                         qtd = limitQuanty,
                         discount = discount
                     }
-                    table.insert(vehiclesTable[v.categoryLabel], provisoryObject)
+                    table.insert(vehiclesTable[v.category], provisoryObject)
                 end
             end
         end
@@ -296,36 +296,46 @@ AddEventHandler('qb-vehicleshop.vehiclesInfos', function()
 end)
 
 function OpenVehicleShop()
-    inTheShop = true
-    TriggerServerEvent("qb-vehicleshop.requestInfo")
-    TriggerEvent('qb-vehicleshop.vehiclesInfos')
-    Citizen.Wait(1000)
-    local testDriveAllowed = false
-    if Config.Shops[vehcategory].setupStore.allowTestDrive then
-        testDriveAllowed = true
-    end
-    SendNUIMessage(
-        {
-            data = vehiclesTable,
-            type = "display",
-            playerName = profileName,
-            playerMoney = profileMoney,
-            testDrive = testDriveAllowed
-        }
-    )
-    SetNuiFocus(true, true)
-    RequestCollisionAtCoord(x, y, z)
-    cam = CreateCamWithParams("DEFAULT_SCRIPTED_CAMERA", Config.Shops[vehcategory].setupStore.shopCameraLoc[1], Config.Shops[vehcategory].setupStore.shopCameraLoc[2], Config.Shops[vehcategory].setupStore.shopCameraLoc[3], Config.Shops[vehcategory].setupStore.shopCameraLoc[4], Config.Shops[vehcategory].setupStore.shopCameraLoc[5], Config.Shops[vehcategory].setupStore.shopCameraLoc[6], 60.00, false, 0)
-    PointCamAtCoord(cam, Config.Shops[vehcategory].setupStore.shopVehicleLoc.x, Config.Shops[vehcategory].setupStore.shopVehicleLoc.y, Config.Shops[vehcategory].setupStore.shopVehicleLoc.z)
-    SetCamActive(cam, true)
-    RenderScriptCams(true, true, 1, true, true)
-    SetFocusPosAndVel(Config.Shops[vehcategory].setupStore.shopCameraLoc[1], Config.Shops[vehcategory].setupStore.shopCameraLoc[2], Config.Shops[vehcategory].setupStore.shopCameraLoc[3], 0.0, 0.0, 0.0)
-    DisplayHud(false)
-    DisplayRadar(false)
 
-    if lastSelectedVehicleEntity ~= nil then
-        DeleteEntity(lastSelectedVehicleEntity)
-    end
+    local ped = PlayerPedId()
+
+    if not startCountDown then
+        TriggerServerEvent('qb-vehicleshop:server:SetRoutePlayer', ped)inTheShop = true
+        TriggerServerEvent("qb-vehicleshop.requestInfo")
+        TriggerEvent('qb-vehicleshop.vehiclesInfos')
+        Citizen.Wait(1000)
+        local testDriveAllowed = false
+        if Config.Shops[vehcategory].setupStore.allowTestDrive then
+            testDriveAllowed = true
+        end
+
+
+
+        SendNUIMessage(
+            {
+                data = vehiclesTable,
+                type = "display",
+                playerName = profileName,
+                playerMoney = profileMoney,
+                testDrive = testDriveAllowed
+            }
+        )
+        SetNuiFocus(true, true)
+        RequestCollisionAtCoord(x, y, z)
+        cam = CreateCamWithParams("DEFAULT_SCRIPTED_CAMERA", Config.Shops[vehcategory].setupStore.shopCameraLoc[1], Config.Shops[vehcategory].setupStore.shopCameraLoc[2], Config.Shops[vehcategory].setupStore.shopCameraLoc[3], Config.Shops[vehcategory].setupStore.shopCameraLoc[4], Config.Shops[vehcategory].setupStore.shopCameraLoc[5], Config.Shops[vehcategory].setupStore.shopCameraLoc[6], 60.00, false, 0)
+        PointCamAtCoord(cam, Config.Shops[vehcategory].setupStore.shopVehicleLoc.x, Config.Shops[vehcategory].setupStore.shopVehicleLoc.y, Config.Shops[vehcategory].setupStore.shopVehicleLoc.z)
+        SetCamActive(cam, true)
+        RenderScriptCams(true, true, 1, true, true)
+        SetFocusPosAndVel(Config.Shops[vehcategory].setupStore.shopCameraLoc[1], Config.Shops[vehcategory].setupStore.shopCameraLoc[2], Config.Shops[vehcategory].setupStore.shopCameraLoc[3], 0.0, 0.0, 0.0)
+        DisplayHud(false)
+        DisplayRadar(false)
+
+        if lastSelectedVehicleEntity ~= nil then
+            DeleteEntity(lastSelectedVehicleEntity)
+        end
+      else
+        QBCore.Functions.Notify('U cheeky monke', "error")
+      end
 end
 
 function updateSelectedVehicle(model)
@@ -344,6 +354,8 @@ function updateSelectedVehicle(model)
     SetModelAsNoLongerNeeded(model)
     SetVehicleOnGroundProperly(lastSelectedVehicleEntity)
     SetEntityInvincible(lastSelectedVehicleEntity, true)
+    SetVehicleLivery(lastSelectedVehicleEntity, 0)
+    SetVehicleModKit(lastSelectedVehicleEntity, 0)
     SetVehicleDirtLevel(lastSelectedVehicleEntity, 0.0)
     SetVehicleDoorsLocked(lastSelectedVehicleEntity, 3)
     FreezeEntityPosition(lastSelectedVehicleEntity, true)
@@ -519,6 +531,7 @@ RegisterNUICallback(
             SetVehicleCustomSecondaryColour(testDriveEntity,  math.ceil(rgbSecondaryColorSelected[1]), math.ceil(rgbSecondaryColorSelected[2]), math.ceil(rgbSecondaryColorSelected[3]))
 
             CloseNui()
+            TriggerServerEvent('qb-vehicleshop:server:SetRoutePlayer')
 
             while startCountDown do
                 local countTime
@@ -530,6 +543,7 @@ RegisterNUICallback(
                     DeleteEntity(testDriveEntity)
                     SetEntityCoords(PlayerPedId(), lastPlayerCoords)
                     startCountDown = false
+                    TriggerServerEvent('qb-vehicleshop:server:ResetRoutePlayer')
                 end
             end
         end
@@ -591,6 +605,9 @@ function CloseNui()
         SetFocusEntity(GetPlayerPed(PlayerId()))
         DisplayHud(true)
         DisplayRadar(true)
+    end
+    if not startCountDown then
+        TriggerServerEvent('qb-vehicleshop:server:ResetRoutePlayer')
     end
     inTheShop = false
     vehiclesTable = {}
