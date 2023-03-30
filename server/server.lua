@@ -23,6 +23,16 @@ QBCore.Functions.CreateCallback('qb-vehicleshop:checkVehicle', function(source, 
     cb(Config.LimitQuantityVehicles[veh])
 end)
 
+RegisterNetEvent('qb-vehicleshop:server:SetRoutePlayer', function()
+    local routingBucket = tonumber(source)
+    SetRoutingBucketPopulationEnabled(routingBucket, false)  -- or true smash 'em peds idc
+    SetPlayerRoutingBucket(source, routingBucket)
+end)
+
+RegisterNetEvent('qb-vehicleshop:server:ResetRoutePlayer', function()
+    SetPlayerRoutingBucket(source, 0)
+end)
+
 RegisterServerEvent('qb-vehicleshop.CheckMoneyForVeh')
 AddEventHandler('qb-vehicleshop.CheckMoneyForVeh', function(veh, price, name, vehicleProps, garage)
     local src = source
